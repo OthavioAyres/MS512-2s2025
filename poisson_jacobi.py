@@ -77,6 +77,38 @@ def gauss_seidel_step(u, b, h):
     return uk
 
 
+def sor_step(u, b, h, omega):
+    """
+    Perform one SOR iteration with standard row ordering and relaxation
+    factor omega. This is Gauss–Seidel with over/under-relaxation:
+
+        u_new = (1 - omega) * u_old + omega * u_GS,
+
+    where u_GS is the value obtained by a Gauss–Seidel update that solves
+    the local discrete equation exactly.
+
+    Returns uk (previous u) so we can use it in convcheck.
+    """
+    m = len(u)
+    # Snapshot of the previous iteration, used only for the convergence check
+    uk = [row[:] for row in u]
+
+    for j in range(1, m - 1):
+        for i in range(1, m - 1):
+            old_val = u[j][i]
+            sigma = (
+                u[j][i - 1]    # left (possibly just updated)
+                + u[j][i + 1]  # right
+                + u[j - 1][i]  # down
+                + u[j + 1][i]  # up
+                + (h ** 2) * b[j][i]
+            )
+            u_gs = sigma / 4.0
+            u[j][i] = (1.0 - omega) * old_val + omega * u_gs
+
+    return uk
+
+
 def convcheck(u, uk, eps):
     """
     Check convergence using the relative L2 norm of the update:
@@ -213,6 +245,59 @@ def poisson_gauss_seidel(m=21, nitmax=1_000_000, eps=1e-8, write_output=True):
     return u, iterations, erro
 
 
+def poisson_sor(m=21, omega=1.0, nitmax=1_000_000, eps=1e-8, write_output=True):
+    """
+    Solve Laplace's equation on [0,1]x[0,1] using the SOR method
+    (standard row ordering) with relaxation factor omega, under the same
+    conditions as the Jacobi and Gauss–Seidel solvers.
+
+    Returns a tuple (u, iterations, final_error), where:
+      - u is the solution array,
+      - iterations is the number of SOR steps performed, and
+      - final_error is the last value of the relative L2 error from convcheck.
+    """
+    h = 1.0 / (m - 1)
+
+    # Initialize arrays: u (solution), b (source term, here zero everywhere)
+    u = [[0.0 for _ in range(m)] for _ in range(m)]
+    b = [[0.0 for _ in range(m)] for _ in range(m)]
+
+    # Apply boundary conditions
+    g = gbc(m, h)
+    for j in range(m):
+        for i in range(m):
+            u[j][i] = g[j][i]
+
+    iterations = 0
+    erro = 0.0
+
+    for k in range(1, nitmax + 1):
+        uk = sor_step(u, b, h, omega)
+        erro, converged = convcheck(u, uk, eps)
+
+        iterations = k
+
+        if converged:
+            print(
+                f"[SOR, omega={omega:.2f}] Converged in {k:8d} iterations, "
+                f"Error = {erro:15.10e}"
+            )
+            break
+    else:
+        print(
+            f"[SOR, omega={omega:.2f}] Did not converge within {nitmax} iterations. "
+            f"Last error = {erro:15.10e}"
+        )
+
+    if write_output:
+        write_solution("fort.100", u, h)
+        print(
+            "SOR solution written to 'fort.100' (use gnuplot 'g-sol.plt' to visualize)."
+        )
+
+    return u, iterations, erro
+
+
 def run_example_8_2_8():
     """
     Reproduce Example 8.2.8: run the Jacobi solver for h = 1/10, 1/20, 1/40
@@ -291,11 +376,73 @@ def run_example_8_2_17():
         print(f"{h_label:>8} {matrix_dim:18d} {iterations:26d}")
 
 
+def run_example_8_2_21():
+    """
+    Reproduce Example 8.2.21 / Table 8.3:
+    Apply the SOR method (standard row ordering) to the same model problem
+    and stopping criterion as in Examples 8.2.8 and 8.2.17, for multiple
+    values of omega and mesh sizes h = 1/20, 1/40, 1/80, 1/160.
+    """
+    # Mesh sizes h = 1/(m-1)
+    h_labels = ["1/20", "1/40", "1/80"]
+    m_values = [21, 41, 81]
+    omegas = [0.8, 1.0, 1.5, 1.8, 1.9, 1.95, 1.97, 2.0]
+
+    nitmax = 100_000
+    eps = 1e-8
+
+    # results[omega] -> list of iteration counts (or None) for each h
+    results = {}
+
+    for omega in omegas:
+        row_iters = []
+        for m in m_values:
+            # Run SOR without producing output files; only iteration counts.
+            u, iterations, erro = poisson_sor(
+                m=m,
+                omega=omega,
+                nitmax=nitmax,
+                eps=eps,
+                write_output=False,
+            )
+            # If convergence was not reached within nitmax, mark as None (∞).
+            # We detect this heuristically: if erro >= eps at the last step,
+            # then the stopping criterion was not satisfied.
+            if erro >= eps:
+                row_iters.append(None)
+            else:
+                row_iters.append(iterations)
+        results[omega] = row_iters
+
+    print()
+    print("Example 8.2.21 / Table 8.3 - SOR method convergence study")
+
+    # Header: omega followed by the four mesh sizes as in the text
+    header_omega = "omega"
+    print(f"{header_omega:>6}", end="")
+    for h_label in h_labels:
+        print(f"{h_label:>8}", end="")
+    print()
+
+    for omega in omegas:
+        row = results[omega]
+        print(f"{omega:6.2f}", end="")
+        for it in row:
+            if it is None:
+                cell = "inf"
+            else:
+                cell = f"{it:d}"
+            print(f"{cell:8}", end="")
+        print()
+
+
 if __name__ == "__main__":
     # Running this module directly reproduces the convergence studies:
-    # - Example 8.2.8 (Jacobi method)
-    # - Example 8.2.17 / Table 8.2 (Gauss–Seidel method)
-    run_example_8_2_8()
-    run_example_8_2_17()
+    # - Example 8.2.8  (Jacobi method)
+    # - Example 8.2.17 (Gauss–Seidel method)
+    # - Example 8.2.21 (SOR method, multiple omega values)
+    #run_example_8_2_8()
+    #run_example_8_2_17()
+    run_example_8_2_21()
 
 

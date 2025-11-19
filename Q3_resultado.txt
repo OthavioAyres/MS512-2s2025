@@ -1,0 +1,42 @@
+python poisson_jacobi.py 
+Converged in      293 iterations, Error = 9.6984701367e-09
+Converged in     1077 iterations, Error = 9.9692867393e-09
+Converged in     3882 iterations, Error = 9.9999040509e-09
+Converged in    13766 iterations, Error = 9.9987455796e-09
+
+Jacobi's method applied to model problem (Example 8.2.8)
+
+     h    Matrix dimension   Iterations to convergence
+------  ------------------  --------------------------
+  1/10                  81                         293
+  1/20                 361                        1077
+  1/40                1521                        3882
+  1/80                6241                       13766
+
+========================================================================
+
+(Gauss–Seidel) Converged in      157 iterations, Error = 9.8542700539e-09
+(Gauss–Seidel) Converged in      574 iterations, Error = 9.9958557942e-09
+(Gauss–Seidel) Converged in     2069 iterations, Error = 9.9821562978e-09
+(Gauss–Seidel) Converged in     7364 iterations, Error = 9.9913991504e-09
+
+Standard Gauss–Seidel applied to model problem (Example 8.2.17)
+
+     h    Matrix dimension   Iterations to convergence
+------  ------------------  --------------------------
+  1/10                  81                         157
+  1/20                 361                         574
+  1/40                1521                        2069
+  1/80                6241                        7364
+
+
+Example 8.2.21 / Table 8.3 - SOR method convergence study
+ omega    1/20    1/40    1/80   
+  0.80    836     3000    10638   
+  1.00    574     2069    7364    
+  1.50    202     752     2706    
+  1.80    88      250     978     
+  1.90    176     179     449     
+  1.95    349     354     354     
+  1.97    585     579     599     
+  2.00    inf     inf     inf    
