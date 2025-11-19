@@ -1,0 +1,36 @@
+## Example 7.2.8
+
+Jacobi’s method was applied to the model problem with
+( f = 0 ) and ( g ) given by
+
+[
+g(x, y) =
+\begin{cases}
+0 & \text{if } x = 0 \
+y & \text{if } x = 1 \
+(x - 1)\sin x & \text{if } y = 0 \
+x(2 - x) & \text{if } y = 1.
+\end{cases}
+]
+
+The initial guess was ( u^{(0)} = 0 ). Three different grid sizes,
+( h = \frac{1}{10}, \frac{1}{20}, \frac{1}{40} ), were used.
+The iterations were continued until the change in ( u ) from one iteration to the next did not exceed ( 10^{-8} ).
+More precisely, the iterations were stopped as soon as
+
+[
+\frac{\lVert u^{(k+1)} - u^{(k)} \rVert_2}{\lVert u^{(k+1)} \rVert_2} < 10^{-8}.
+]
+
+The results are shown in Table 7.1.
+We observe that convergence is slow, and it becomes slower as the grid is refined.
+On the positive side, the program was easy to write and debug.
+
+### Table 7.1 – *Jacobi’s method applied to model problem*
+
+| (h)  | Matrix dimension | Iterations to convergence |
+| ---- | ---------------- | ------------------------- |
+| 1/10 | 81               | 299                       |
+| 1/20 | 361              | 1090                      |
+| 1/40 | 1521             | 3908                      |
+

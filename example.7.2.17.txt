@@ -1,0 +1,18 @@
+## Example 7.2.17
+
+The Gauss–Seidel method, using the standard row ordering, was applied to the model problem (7.1.8) under exactly the same conditions as in Example 7.2.8.
+The results are shown in Table 7.2. Comparing with Example 7.2.8,
+
+### Table 7.2 — *Standard Gauss–Seidel applied to model problem*
+
+| (h)  | Matrix dimension | Iterations to convergence |
+| ---- | ---------------- | ------------------------- |
+| 1/10 | 81               | 160                       |
+| 1/20 | 361              | 581                       |
+| 1/40 | 1521             | 2082                      |
+
+we see that the Gauss–Seidel method needs only slightly more than half as many iterations as the Jacobi method to obtain the same accuracy.
+It is still fair to say that the convergence is slow, and there is still the problem that the number of iterations increases as the grid is made finer.
+The largest problem considered here is of modest size.
+Extrapolating from these results, we can expect Gauss–Seidel will converge very slowly on really big problems.
+

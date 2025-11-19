@@ -1,0 +1,7 @@
+1) para gerar executavel (deve ter o gfortran instalado)
+gfortran 01-poisson-jacobi.f90 
+2) rodar: 
+time ./a.out
+
+OBS: flag para otimizar (roda mais rapido):
+gfortran -O3 01-poisson-jacobi.f90
