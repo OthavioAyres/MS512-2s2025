@@ -98,6 +98,12 @@ def poisson_jacobi(m=21, nitmax=1_000_000, eps=1e-8, write_output=True):
     """
     Main driver: solve Laplace's equation on [0,1]x[0,1] with the same
     boundary conditions and parameters as the Fortran program.
+
+    Returns a tuple (u, iterations, final_error), where:
+      - u is the solution array,
+      - iterations is the number of Jacobi steps performed (up to convergence
+        or nitmax), and
+      - final_error is the last value of the relative L2 error from convcheck.
     """
     h = 1.0 / (m - 1)
 
@@ -112,10 +118,15 @@ def poisson_jacobi(m=21, nitmax=1_000_000, eps=1e-8, write_output=True):
         for i in range(m):
             u[j][i] = g[j][i]
 
+    iterations = 0
+    erro = 0.0
+
     # Jacobi iterations
     for k in range(1, nitmax + 1):
         uk = jacobi_step(u, b, h)
         erro, converged = convcheck(u, uk, eps)
+
+        iterations = k
 
         if converged:
             print(f"Converged in {k:8d} iterations, Error = {erro:15.10e}")
@@ -129,9 +140,54 @@ def poisson_jacobi(m=21, nitmax=1_000_000, eps=1e-8, write_output=True):
         write_solution("fort.100", u, h)
         print("Solution written to 'fort.100' (use gnuplot 'g-sol.plt' to visualize).")
 
-    return u
+    return u, iterations, erro
+
+
+def run_example_8_2_8():
+    """
+    Reproduce Example 8.2.8: run the Jacobi solver for h = 1/10, 1/20, 1/40
+    and print a table with (h, matrix dimension, iterations to convergence).
+    """
+    # Grid sizes chosen so that h = 1 / (m - 1) is 1/10, 1/20, 1/40
+    m_values = [11, 21, 41,81]
+    nitmax = 1_000_000
+    eps = 1e-8
+
+    results = []
+
+    for m in m_values:
+        h = 1.0 / (m - 1)
+        # We suppress file output here, since we are only interested
+        # in the iteration counts for the convergence study.
+        u, iterations, erro = poisson_jacobi(
+            m=m,
+            nitmax=nitmax,
+            eps=eps,
+            write_output=False,
+        )
+
+        # Number of interior unknowns in each direction is (m-2),
+        # so the total number of unknowns is (m-2)^2.
+        matrix_dim = (m - 2) ** 2
+        h_label = f"1/{m - 1}"
+
+        results.append((h_label, matrix_dim, iterations))
+    print()
+    print("Example 8.2.8 - Jacobi method convergence study")
+    header_h = "h"
+    header_dim = "Matrix dimension"
+    header_it = "Iterations to convergence"
+    print(f"{header_h:>8} {header_dim:>18} {header_it:>26}")
+
+    for h_label, matrix_dim, iterations in results:
+        print(f"{h_label:>8} {matrix_dim:18d} {iterations:26d}")
 
 
 if __name__ == "__main__":
-    # Parameters chosen to match the Fortran code
-    poisson_jacobi(m=21, nitmax=1_000_000, eps=1e-8, write_output=True)
+    # Running this module directly reproduces Example 8.2.8:
+    # it executes the Jacobi method for h = 1/10, 1/20, 1/40, 1/80 and
+    # prints a table with the matrix dimension and iterations
+    # to convergence for each grid.
+    run_example_8_2_8()
+
+
