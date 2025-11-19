@@ -1,0 +1,32 @@
+**Example 8.2.21**
+The SOR method, using the standard row ordering, was applied to the model problem (8.1.8) under exactly the same conditions as in Examples 8.2.8 and 8.2.17. Several values of the relaxation factor ω were tried. The results are shown in Table 8.3. Iterations were halted as soon as
+
+‖u^(k+1) − u^(k)‖₂ / ‖u^(k+1)‖₂ < 10⁻⁸.
+
+*In contrast, Jacobi’s method performs simultaneous relaxation.*
+
+The choice ω = 1 corresponds to Gauss–Seidel; the numbers in the second row are
+
+**Table 8.3 — Iteration counts for SOR applied to model problem**
+
+| ω    | 1/20 | 1/40 | 1/80  | 1/160 |
+| ---- | ---- | ---- | ----- | ----- |
+| 0.8  | 845  | 3018 | 10676 | 27208 |
+| 1.0  | 581  | 2082 | 7389  | 25877 |
+| 1.5  | 204  | 756  | 2714  | 9611  |
+| 1.8  | 89   | 252  | 981   | 3541  |
+| 1.9  | 180  | 179  | 450   | 1769  |
+| 1.95 | 354  | 361  | 355   | 832   |
+| 1.97 | 589  | 585  | 602   | 643   |
+| 2.0  | ∞    | ∞    | ∞     | ∞     |
+
+We note that underrelaxation (ω = 0.8) is detrimental and overrelaxation can be very beneficial, particularly if an ω that is close to optimal is used. For the finest mesh, the iteration count is cut by a factor of 40 when ω = 1.97. Since SOR steps take only slightly more work than Gauss–Seidel steps, the savings in iterations translate almost directly into savings in computer time.
+
+From the numbers in Table 8.3 we see that the optimal value of ω depends on the mesh size (and in general it depends on the coefficient matrix A). For h = 1/20 the best ω is somewhere around 1.8, for h = 1/40 it is around 1.9, and for h = 1/80 it is around 1.95. For most problems the optimal ω is not known, but the numbers in Table 8.3 suggest that even a crude guess can yield substantial savings. However, SOR diverges when ω ≥ 2.
+
+For our model problem the optimal ω is known to be
+
+ω_b = 2 / (1 + sin(πh)).
+
+When h = 1/160 it is approximately 1.9615. Using this value of ω, SOR converges in 518 iterations.
+
