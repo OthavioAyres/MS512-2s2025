@@ -1,0 +1,611 @@
+
+> setwd("~/Unicamp/2s2025/MS512-2s2025/exercicios1e2")
+> #This exercise demonstrates that the QR method is superior to the normal
+> #equations method when the condition number is bad. It also shows how a change of
+> #basis can improve the condition number. Consider the following data.
+> 
+> #Conjunto de dados:
+> set.seed(12345)
+> options(digits = 15)
+> t <- c(0.98765431, 0.98765432, 0.98765433, 0.98765434, 0.98765435, 0.98765436, 0.98765437, 0.98765438, 0.98765439)
+> y <- c(rep(2.1, 3), 2, rep(1.9,2), 1.8, rep(1.7,2))
+> data <- data.frame(t,y)
+> data
+           t   y
+1 0.98765431 2.1
+2 0.98765432 2.1
+3 0.98765433 2.1
+4 0.98765434 2.0
+5 0.98765435 1.9
+6 0.98765436 1.9
+7 0.98765437 1.8
+8 0.98765438 1.7
+9 0.98765439 1.7
+> #------------------------------------------------------------------------------------------
+> #a)Set up an over-determined system Ax = b for a linear polynomial. Use the
+> #basis phi (t) = 1, phi2 (i) = t. Using MATLAB, find the condition number of A.
+> #Find the least-squares solution by the QR decomposition method (e.g. x=A\b in MATLAB). 
+> #Calculate the norm of the residual.
+> #------------------------------------------------------------------------------------------
+> #Definindo o sistema Ax = b: phi1(t) = 1 e phi2(t) = t.
+> # Para facilitar a nomenclatura, vamos usar o sistema "X beta = Y", em que:
+> # X: é a matriz A 
+> # beta: é a solução do sistema (x)
+> # Y: correspondente a b
+> 
+> #Definindo a matriz X
+> X <- cbind(const = 1, t = t)
+> X # Os numeros de t sao tao pequenos e proximos, que praticamente a coluna 1 é uma combinacao linear da 2. Teremos problemas!
+      const          t
+ [1,]     1 0.98765431
+ [2,]     1 0.98765432
+ [3,]     1 0.98765433
+ [4,]     1 0.98765434
+ [5,]     1 0.98765435
+ [6,]     1 0.98765436
+ [7,]     1 0.98765437
+ [8,]     1 0.98765438
+ [9,]     1 0.98765439
+> 
+> #verificando o determinante:
+> XTX <- t(X) %*% X
+> det(XTX) #o determinante é extremamente pequeno. É quase zero!  (lembrete: Determinante = 0 não tem inversa). 
+[1] 7.99360577730109e-14
+> 
+> #Número de condição de X. Lembrete: Kappa(A) = ||A||||A^-1||
+> KX <- kappa(X)
+> KX # A matriz é mal condicionada. o kappa(A) é gigante!
+[1] 76981520.7112981
+> 
+> #Resolvendo agora os mínimos quadrados usando a fatoração QR: 
+> #A função lm() usar QR por trás. 
+> #Com lm()
+> solucao1 <- lm(y ~ X[, 2])
+> coef(solucao1)
+     (Intercept)           X[, 2] 
+1.92222222222222               NA 
+> #QR diretamente:
+> QR <- qr(X)
+> solucao2 <- qr.coef(QR, y)
+> solucao2
+           const                t 
+1.92222222222222               NA 
+> # NAO DEU CERTO!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+> 
+> 
+> 
+> 
+> # Resolvendo: vamos reescalar os valores da X:
+> t_mean <- mean(t)
+> t_scaled <- (t - t_mean) * 1e6   # escalonamos e montamos nova matriz A
+> X_nova <- cbind(const = 1, t = t_scaled)
+> 
+> #numero de condição da matriz nova
+> kappa(X_nova) #melhorou muito
+[1] 37.7801734660582
+> 
+> #nova decomposição QR:
+> QR2 <- qr(X_nova)
+> #pegando a Q:
+> Q <- qr.Q(QR2)
+> Q
+                    [,1]                  [,2]
+ [1,] -0.333333333333333 -5.16397779048409e-01
+ [2,] -0.333333333333333 -3.87298334963139e-01
+ [3,] -0.333333333333333 -2.58198889444577e-01
+ [4,] -0.333333333333333 -1.29099445359307e-01
+ [5,] -0.333333333333333  1.59254665010877e-10
+ [6,] -0.333333333333333  1.29099444244525e-01
+ [7,] -0.333333333333333  2.58198889763087e-01
+ [8,] -0.333333333333333  3.87298335281649e-01
+ [9,] -0.333333333333333  5.16397779366919e-01
+> #pegando a R:
+> R<-qr.R(QR2)
+> R
+     const                    t
+[1,]    -3 3.70074249023133e-11
+[2,]     0 7.74596669263757e-02
+> 
+> # resolver:   X = Q R 
+> #             X beta = y
+> #           (Qtransp X) beta = Qtransp y
+> #             R beta = Qtransp y
+> solucao.betas <- backsolve(R, t(Q) %*% y)   
+> solucao.betas #sao do sistema transformado (scaled)
+                  [,1]
+[1,]  1.92222222215026
+[2,] -5.83333333414218
+> 
+> beta0_scaled <- solucao.betas[1]; beta1_scaled <- solucao.betas[2]
+> # converter para a escala original:
+> # temos: y = beta0_scaled + beta1_scaled * [t_scaled]
+> #        y = beta0_scaled + beta1_scaled * [(t - t_mean) * 1e6]
+> #        y = beta0_scaled + beta1_scaled * [t * 1e6 - t_mean * 1e6]
+> #        y = beta0_scaled + beta1_scaled * (t * 1e6) - beta1_scaled (t_mean * 1e6)
+> # organizando:
+> #        y = (beta0_scaled - beta1_scaled * t_mean * 1e6) + (beta1_scaled * 1e6) * t
+> 
+> beta1_original <- beta1_scaled * 1e6
+> beta0_original <- beta0_scaled - (beta1_original * t_mean)
+> 
+> # Solução do sistema:
+> betas_qr <- c(intercept = beta0_original, slope = beta1_original)
+> betas_qr #sao do sistema original
+        intercept             slope 
+ 5761318.96468775 -5833333.33414218 
+> 
+> #Resíduo e sua norma 2:
+> r <- y - X %*% betas_qr
+> r
+                      [,1]
+ [1,] -0.05555555559694758
+ [2,]  0.00277777798473844
+ [3,]  0.06111111156642446
+ [4,]  0.01944444421678782
+ [5,] -0.02222222220152625
+ [6,]  0.03611111138015977
+ [7,] -0.00555555503815408
+ [8,] -0.04722222145646815
+ [9,]  0.01111111119389530
+> res_norm <- norm(r, "2")
+> res_norm
+[1] 0.106718737266306
+> 
+> #------------------------------------------------------------------------------------------
+> #b)Obtain the normal equations ATAx = ATb. Find the condition number of
+> #the coefficient matrix. Solve the normal equations. Calculate the norm of the
+> #residual (|| b - Ax||2).
+> #------------------------------------------------------------------------------------------
+> # ATAx = ATb, ou seja, na nossa nomenclatura: Xtransp X beta = Xtransp y
+> X
+      const          t
+ [1,]     1 0.98765431
+ [2,]     1 0.98765432
+ [3,]     1 0.98765433
+ [4,]     1 0.98765434
+ [5,]     1 0.98765435
+ [6,]     1 0.98765436
+ [7,]     1 0.98765437
+ [8,]     1 0.98765438
+ [9,]     1 0.98765439
+> XTX <- t(X) %*% X
+> XTX
+           const                t
+const 9.00000000 8.88888915000000
+t     8.88888915 8.77915003566531
+> XTY <- t(X) %*% y
+> XTY
+             [,1]
+const 17.30000000
+t     17.08642022
+> 
+> # número de condição de XTX
+> kappa(X)
+[1] 76981520.7112981
+> kappa(XTX) #Muito grande, maior que a de X que já era mal condicionada. Ou seja, XTX é mal condicionada
+[1] 3538566908932572
+> 
+> # solução via equações normais
+> # resolver:   Xtransp X beta = Xtransp y 
+> beta_eqnormais <- solve(XTX, XTY)
+> beta_eqnormais
+                   [,1]
+const  3892001.24642624
+t     -3940649.20000000
+> 
+> # Norma 2 do resíduo
+> res_eqnormais <- y - X %*% beta_eqnormais
+> res_eqnormais_norm <- norm(res_eqnormais, type = "2")
+> res_eqnormais_norm
+[1] 0.181335071620491
+> #------------------------------------------------------------------------------------------
+> #c)Compare your solutions from parts (a) and (b). Plot the two polynomials and
+> #the data points on a single graph.
+> #------------------------------------------------------------------------------------------
+> betas_qr
+        intercept             slope 
+ 5761318.96468775 -5833333.33414218 
+> beta_eqnormais
+                   [,1]
+const  3892001.24642624
+t     -3940649.20000000
+> 
+> comparacao <- data.frame(
++   metodo = c("QR", "NormalEQ"),
++   beta0 = c(betas_qr["intercept"], beta_eqnormais["const", 1]),
++   beta1 = c(betas_qr["slope"], beta_eqnormais["t", 1]),
++   row.names = NULL)
+> comparacao
+    metodo            beta0             beta1
+1       QR 5761318.96468775 -5833333.33414218
+2 NormalEQ 3892001.24642624 -3940649.20000000
+> 
+> 
+> 
+> beta0_qr <- comparacao$beta0[1]
+> beta1_qr <- comparacao$beta1[1]
+> 
+> beta0_ne <- comparacao$beta0[2]
+> beta1_ne <- comparacao$beta1[2]
+> 
+> library(ggplot2)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+> 
+> data
+           t   y
+1 0.98765431 2.1
+2 0.98765432 2.1
+3 0.98765433 2.1
+4 0.98765434 2.0
+5 0.98765435 1.9
+6 0.98765436 1.9
+7 0.98765437 1.8
+8 0.98765438 1.7
+9 0.98765439 1.7
+> 
+> df_lines <- data.frame(
++   t = t,
++   y = y,
++   y_pred = c(beta0_qr + beta1_qr * t, beta0_ne + beta1_ne * t),
++   metodo = rep(c("QR", "Normal Equations"), each = length(t))
++ )
+> df_lines
+            t   y           y_pred
+1  0.98765431 2.1 2.15555555559695
+2  0.98765432 2.1 2.09722222201526
+3  0.98765433 2.1 2.03888888843358
+4  0.98765434 2.0 1.98055555578321
+5  0.98765435 1.9 1.92222222220153
+6  0.98765436 1.9 1.86388888861984
+7  0.98765437 1.8 1.80555555503815
+8  0.98765438 1.7 1.74722222145647
+9  0.98765439 1.7 1.68888888880610
+10 0.98765431 2.1 2.07984818937257
+11 0.98765432 2.1 2.04044169746339
+12 0.98765433 2.1 2.00103520508856
+13 0.98765434 2.0 1.96162871364504
+14 0.98765435 1.9 1.92222222127020
+15 0.98765436 1.9 1.88281572936103
+16 0.98765437 1.8 1.84340923745185
+17 0.98765438 1.7 1.80400274507701
+18 0.98765439 1.7 1.76459625316784
+             metodo
+1                QR
+2                QR
+3                QR
+4                QR
+5                QR
+6                QR
+7                QR
+8                QR
+9                QR
+10 Normal Equations
+11 Normal Equations
+12 Normal Equations
+13 Normal Equations
+14 Normal Equations
+15 Normal Equations
+16 Normal Equations
+17 Normal Equations
+18 Normal Equations
+> 
+> grafico1 <- df_lines %>% ggplot() +
++   geom_point(aes(x = t, y = y), color = "black") +
++   geom_line(aes(x = t, y = y_pred, color = metodo, linetype = metodo), size = 1.2) +
++   scale_color_manual(values = c("QR" = "blue", "Normal Equations" = "red")) +
++   scale_linetype_manual(values = c("QR" = "solid", "Normal Equations" = "dashed")) +
++   labs(
++     title = "Comparação: ajuste Eq lineares  QR vs Equações Normais",
++     x = "t",
++     y = "y"
++   ) +
++   theme_minimal(base_size = 14)
+Warning message:
+Using `size` aesthetic for lines was deprecated
+in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to
+see where this warning was generated. 
+> grafico1
+> #Pelo gráfico, vemos que a reta via cecomposição QR é mais estável.
+> 
+> #------------------------------------------------------------------------------------------
+> #d)Now set up a different over-determined system Âˆx = ˆb for the same data using
+> #the basis phi (t) = 1, phi2 (i) = 3*10^7*(t-0.98765435). Find the condition
+> #number of A. Find the least-squares solution by the QR decomposition method.
+> #Calculate the norm of the residual.
+> #------------------------------------------------------------------------------------------
+> 
+> # Vamos estabelecer a nova matriz X 
+> t_novo <- 3*(10^7)*(t-0.98765435)
+> t_novo
+[1] -1.199999999368373 -0.900000001191614
+[3] -0.599999999684186 -0.300000001507428
+[5]  0.000000000000000  0.299999998176759
+[7]  0.599999999684186  0.900000001191614
+[9]  1.199999999368373
+> X_diferente <- cbind(const = 1, t = t_novo)
+> X_diferente
+      const                  t
+ [1,]     1 -1.199999999368373
+ [2,]     1 -0.900000001191614
+ [3,]     1 -0.599999999684186
+ [4,]     1 -0.300000001507428
+ [5,]     1  0.000000000000000
+ [6,]     1  0.299999998176759
+ [7,]     1  0.599999999684186
+ [8,]     1  0.900000001191614
+ [9,]     1  1.199999999368373
+> 
+> #número de condição da X_padronizada:
+> kappa(X_diferente) # muito melhor!
+[1] 1.16397779521596
+> 
+> # Solução de quadrados mínimos via QR:
+> #decomposição QR:
+> QR_d <- qr(X_diferente)
+> #pegando a Q:
+> Q_d <- qr.Q(QR_d)
+> Q_d
+                    [,1]                  [,2]
+ [1,] -0.333333333333333 -5.16397779048409e-01
+ [2,] -0.333333333333333 -3.87298334963139e-01
+ [3,] -0.333333333333333 -2.58198889444577e-01
+ [4,] -0.333333333333333 -1.29099445359307e-01
+ [5,] -0.333333333333333  1.59254609499726e-10
+ [6,] -0.333333333333333  1.29099444244525e-01
+ [7,] -0.333333333333333  2.58198889763087e-01
+ [8,] -0.333333333333333  3.87298335281648e-01
+ [9,] -0.333333333333333  5.16397779366919e-01
+> #pegando a R:
+> R_d <- qr.R(QR_d)
+> R_d
+     const                    t
+[1,]    -3 1.11022302462516e-09
+[2,]     0 2.32379000779127e+00
+> 
+> # resolver:   X = Q R 
+> #             X beta = y
+> #           (Qtransp X) beta = Qtransp y
+> #             R beta = Qtransp y
+> # solucao.betas.d <- backsolve(R_d, t(Q_d) %*% y)  ou 
+> solucao.betas.d <- qr.coef(QR_d, y) 
+> 
+> solucao.betas.d
+             const                  t 
+ 1.922222222150263 -0.194444444471406 
+> 
+> #Resíduo e sua norma 2:
+> res_d <- y - X_diferente %*% solucao.betas.d
+> res_d
+                      [,1]
+ [1,] -0.05555555539313328
+ [2,]  0.00277777759376940
+ [3,]  0.06111111122830204
+ [4,]  0.01944444421520442
+ [5,] -0.02222222215026304
+ [6,]  0.03611111083663965
+ [7,] -0.00555555552882758
+ [8,] -0.04722222189429504
+ [9,]  0.01111111109260743
+> res_norm_d <- norm(res_d, "2")
+> res_norm_d
+[1] 0.106718736970262
+> 
+> #------------------------------------------------------------------------------------------
+> #e)Obtain the normal equations ÂT Âˆx = Ât ˆb. Find the condition number of
+> #the coefficient matrix. Solve the normal equations. Calculate the norm of the
+> #residual (\\b — Ax\\2).
+> #------------------------------------------------------------------------------------------
+> 
+> X_diferente
+      const                  t
+ [1,]     1 -1.199999999368373
+ [2,]     1 -0.900000001191614
+ [3,]     1 -0.599999999684186
+ [4,]     1 -0.300000001507428
+ [5,]     1  0.000000000000000
+ [6,]     1  0.299999998176759
+ [7,]     1  0.599999999684186
+ [8,]     1  0.900000001191614
+ [9,]     1  1.199999999368373
+> XdTXd <- t(X_diferente) %*% X_diferente
+> XdTXd
+                      const
+const  9.00000000000000e+00
+t     -3.33066907387547e-09
+                          t
+const -3.33066907387547e-09
+t      5.40000000031056e+00
+> XdTY <- t(X_diferente) %*% y
+> XdTY
+                   [,1]
+const 17.30000000000000
+t     -1.05000000660826
+> 
+> # número de condição de XTX
+> kappa(X_diferente)
+[1] 1.16397779521596
+> kappa(XdTXd)
+[1] 1.41666666730708
+> 
+> # solução minimos quadrados via equações normais
+> # resolver:   Xtransp X beta = Xtransp y 
+> beta_eqnormais_d <- solve(XdTXd, XdTY)
+> beta_eqnormais_d
+                    [,1]
+const  1.922222222150263
+t     -0.194444444471406
+> 
+> # Norma 2 do resíduo
+> res_eqnormais_d <- y - X %*% beta_eqnormais_d
+> res_eqnormais_d_norm <- norm(res_eqnormais_d, type = "2")
+> 
+> 
+> #------------------------------------------------------------------------------------------
+> #f)Compare your solutions from parts (d) and (e). This time they are identical (to
+> #15 decimal places if you care to check). What polynomial do these solutions
+> #represent? You might want to plot it just to make sure you've worked the
+> #problem correctly. If you do make a plot, you will see that your line looks
+> #identical to the one computed using the QR decomposition in part (a). That one
+> #was correct to only about eight decimal places, whereas the solutions computed
+> #using the well-conditioned matrices are correct to machine precision, but of
+> #course the difference does not show up in a plot (and wouldn't matter in most
+> #applications either).
+> #------------------------------------------------------------------------------------------
+> 
+> solucao.betas.d
+             const                  t 
+ 1.922222222150263 -0.194444444471406 
+> beta_eqnormais_d
+                    [,1]
+const  1.922222222150263
+t     -0.194444444471406
+> 
+> comparacao_d <- data.frame(
++   metodo = c("QR", "NormalEQ"),
++   beta0 = c(solucao.betas.d[1], beta_eqnormais_d["const", 1]),
++   beta1 = c(solucao.betas.d[2], beta_eqnormais_d["t", 1]),
++   row.names = NULL)
+> comparacao_d
+    metodo            beta0              beta1
+1       QR 1.92222222215026 -0.194444444471406
+2 NormalEQ 1.92222222215026 -0.194444444471406
+> 
+> 
+> beta0_qr_d <- comparacao_d$beta0[1]
+> beta1_qr_d <- comparacao_d$beta1[1]
+> 
+> beta0_ne_d <- comparacao_d$beta0[2]
+> beta1_ne_d <- comparacao_d$beta1[2]
+> 
+> library(ggplot2)
+> library(dplyr)
+> 
+> data
+           t   y
+1 0.98765431 2.1
+2 0.98765432 2.1
+3 0.98765433 2.1
+4 0.98765434 2.0
+5 0.98765435 1.9
+6 0.98765436 1.9
+7 0.98765437 1.8
+8 0.98765438 1.7
+9 0.98765439 1.7
+> 
+> df_lines_d <- data.frame(
++   t_novo = t_novo,
++   y = y,
++   y_pred = c(beta0_qr_d + beta1_qr_d * t_novo, beta0_ne_d + beta1_ne_d * t_novo),
++   metodo = rep(c("QR", "Normal Equations"), each = length(t_novo))
++ )
+> df_lines_d
+               t_novo   y           y_pred
+1  -1.199999999368373 2.1 2.15555555539313
+2  -0.900000001191614 2.1 2.09722222240623
+3  -0.599999999684186 2.1 2.03888888877170
+4  -0.300000001507428 2.0 1.98055555578480
+5   0.000000000000000 1.9 1.92222222215026
+6   0.299999998176759 1.9 1.86388888916336
+7   0.599999999684186 1.8 1.80555555552883
+8   0.900000001191614 1.7 1.74722222189429
+9   1.199999999368373 1.7 1.68888888890739
+10 -1.199999999368373 2.1 2.15555555539313
+11 -0.900000001191614 2.1 2.09722222240623
+12 -0.599999999684186 2.1 2.03888888877170
+13 -0.300000001507428 2.0 1.98055555578480
+14  0.000000000000000 1.9 1.92222222215026
+15  0.299999998176759 1.9 1.86388888916336
+16  0.599999999684186 1.8 1.80555555552883
+17  0.900000001191614 1.7 1.74722222189429
+18  1.199999999368373 1.7 1.68888888890739
+             metodo
+1                QR
+2                QR
+3                QR
+4                QR
+5                QR
+6                QR
+7                QR
+8                QR
+9                QR
+10 Normal Equations
+11 Normal Equations
+12 Normal Equations
+13 Normal Equations
+14 Normal Equations
+15 Normal Equations
+16 Normal Equations
+17 Normal Equations
+18 Normal Equations
+> 
+> grafico2 <- df_lines_d %>% ggplot() +
++   geom_point(aes(x = t_novo, y = y), color = "black") +
++   geom_line(aes(x = t_novo, y = y_pred, color = metodo, linetype = metodo), size = 1.2) +
++   scale_color_manual(values = c("QR" = "blue", "Normal Equations" = "red")) +
++   scale_linetype_manual(values = c("QR" = "solid", "Normal Equations" = "dashed")) +
++   labs(
++     title = "Comparação: ajuste Eq lineares  QR vs Equações Normais",
++     x = "t_novo",
++     y = "y"
++   ) +
++   theme_minimal(base_size = 14)
+> grafico2
+> 
+> library(patchwork)
+> grafico1+grafico2
+> 
+> 
+> cat("Sistema (base 1, t) - QR:\n"); 
+Sistema (base 1, t) - QR:
+> cat("beta0 =", format(beta0_qr, digits = 15), "\n")
+beta0 = 5761318.96468775 
+> cat("beta1 =", format(beta1_qr, digits = 15), "\n")
+beta1 = -5833333.33414218 
+> cat("\nNorma do resíduo QR:", format(res_norm, digits = 15), "\n")
+
+Norma do resíduo QR: 0.106718737266306 
+> cat("Sistema (base 1, t) - NormalEq:\n"); 
+Sistema (base 1, t) - NormalEq:
+> cat("beta0 =", format(beta0_ne, digits = 15), "\n")
+beta0 = 3892001.24642624 
+> cat("beta1 =", format(beta1_ne, digits = 15), "\n")
+beta1 = -3940649.2 
+> cat("\nNorma do resíduo NormalEq:", format(res_eqnormais_norm, digits = 15), "\n\n")
+
+Norma do resíduo NormalEq: 0.181335071620491 
+
+> 
+> 
+> cat("Sistema convertidos para (base 1, 3*10^7*(t-0.98765435)) - QR:\n")
+Sistema convertidos para (base 1, 3*10^7*(t-0.98765435)) - QR:
+> cat("beta0 =", format(beta0_qr_d, digits = 15), "\n")
+beta0 = 1.92222222215026 
+> cat("beta1 =", format(beta1_qr_d, digits = 15), "\n\n")
+beta1 = -0.194444444471406 
+
+> cat("\nNorma do resíduo QR:", format(res_norm_d, digits = 15), "\n")
+
+Norma do resíduo QR: 0.106718736970262 
+> cat("Sistema convertidos para (base 1, 3*10^7*(t-0.98765435)) - NormalEq:\n")
+Sistema convertidos para (base 1, 3*10^7*(t-0.98765435)) - NormalEq:
+> cat("beta0 =", format(beta0_ne_d, digits = 15), "\n")
+beta0 = 1.92222222215026 
+> cat("beta1 =", format(beta1_ne_d, digits = 15), "\n\n")
+beta1 = -0.194444444471406 
+
+> cat("\nNorma do resíduo NormalEq:", format(res_eqnormais_d_norm, digits = 15), "\n\n")
+
+Norma do resíduo NormalEq: 0.739921132845406 

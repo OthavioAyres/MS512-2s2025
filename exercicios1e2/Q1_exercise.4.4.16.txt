@@ -1,0 +1,29 @@
+
+
+**Exercise 4.4.16** This exercise demonstrates that the QR method is superior to the normal equations method when the condition number is bad. It also shows how a change of basis can improve the condition number. Consider the following data.
+
+```
+        ti          yi
+0.98765431      2.1
+0.98765432      2.1
+0.98765433      2.1
+0.98765434      2.0
+0.98765435      1.9
+0.98765436      1.9
+0.98765437      1.8
+0.98765438      1.7
+0.98765439      1.7
+```
+
+(a) Set up an over-determined system Ax = b for a linear polynomial. Use the basis ϕ₁(t) = 1, ϕ₂(t) = t. Using MATLAB, find the condition number of A. Find the least-squares solution by the QR decomposition method (e.g. x=A\b in MATLAB). Calculate the norm of the residual.
+
+(b) Obtain the normal equations AᵀAx = Aᵀb. Find the condition number of the coefficient matrix. Solve the normal equations. Calculate the norm of the residual (‖b − Âx‖₂).
+
+(c) Compare your solutions from parts (a) and (b). Plot the two polynomials and the data points on a single graph.
+
+(d) Now set up a different over-determined system Ãx = b̃ for the same data using the basis ϕ₁(t) = 1, ϕ₂(t) = 3 × 10⁷ × (t − .98765435). Find the condition number of Ã. Find the least-squares solution by the QR decomposition method. Calculate the norm of the residual.
+
+(e) Obtain the normal equations Ãᵀ Ãx = Ãᵀ b̃. Find the condition number of the coefficient matrix. Solve the normal equations. Calculate the norm of the residual (‖b̃ − Ãx‖₂).
+
+(f) Compare your solutions from parts (d) and (e). This time they are identical (to 15 decimal places if you care to check). What polynomial do these solutions represent? You might want to plot it just to make sure you’ve worked the problem correctly. If you do make a plot, you will see that your line looks identical to the one computed using the QR decomposition in part (a). That one was correct to only about eight decimal places, whereas the solutions computed using the well-conditioned matrices are correct to machine precision, but of course the difference does not show up in a plot (and wouldn’t matter in most applications either).
+

@@ -1,0 +1,20 @@
+**Exercise 5.3.17** Let
+[
+A = \begin{bmatrix}
+8 & 1 \
+-2 & 1
+\end{bmatrix}.
+]
+
+(a) Use inverse iteration with ρ = 8 and ( q_0 = [1 ;; 1]^T ) to calculate an eigenvalue and eigenvector of A. (On this small problem it may be easiest simply to calculate ( B = (A - 8I)^{-1} ) and perform direct iterations with B.)
+
+(b) Now that you have calculated an eigenvector v, calculate the ratios
+[
+\frac{| q_{j+1} - v |}{| q_j - v |}
+]
+for ( j = 0, 1, 2, \ldots ), to find the observed rate of convergence. Solve for the eigenvalues using the characteristic equation or MATLAB and calculate the theoretical convergence rate
+[
+\left| \frac{\lambda_1 - 8}{\lambda_2 - 8} \right|.
+]
+How well does theory agree with practice?
+
