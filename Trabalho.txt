@@ -1,0 +1,28 @@
+
+Instruções
+
+• Entrega: Um arquivo .MD que deverão incluir a discussão dos resultados encontrados para cada uma das questões.
+
+
+**Questões**
+---
+
+**Questão 1**
+
+Fazer o Exercício 4.4.16. (2 pontos)
+
+---
+
+**Questão 2**
+
+Fazer o Exercício 5.3.17. (2 pontos)
+
+---
+
+**Questão 3**
+
+a) Construa um código e reproduza o Exemplo 8.2.8, incluindo os resultados até o menor h que você conseguir simular em seu computador. (2 pontos)
+
+b) Modifique o código da letra a) e reproduza o Exemplo 8.2.17, incluindo os resultados até o menor h que você conseguir simular em seu computador. (2 pontos)
+
+c) Modifique o código da letra b) e reproduza o Exemplo 8.2.21, incluindo os resultados até o menor h que você conseguir simular em seu computador. (2 pontos)
